@@ -15,7 +15,6 @@ draw_text:         .asciiz "It's a Draw!"
 new_line:          .asciiz "\n"
 
 .text
-.globl main
 
 main:
     # Display the menu
