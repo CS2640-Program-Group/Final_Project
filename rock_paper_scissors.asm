@@ -38,6 +38,33 @@ view_rules:
 invalid_menu_option:        
                                     
 start_game:
+    # Print prompt for user 
+	li $v0, 4
+	la $a0, prompt
+	syscall
+	
+	# Read user's choice
+	li $v0, 12
+	syscall                 # $v0 has user's choice
+	move $s0, $v0
+
+        #need code for bot    
+    
+
+    # Check for draw
+    bne $s0, $s1, not_draw
+    # Print draw message
+	li $v0, 4
+	la $a0, draw_text
+	syscall
+	
+	j exit
+
+not_draw: 
+    #check for winner
+    li $t0, 'r'
+	li $t1, 'p'
+	li $t2, 's'
     
 exit_game:
    
