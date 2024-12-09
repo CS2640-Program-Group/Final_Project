@@ -3,87 +3,8 @@
 # CS 2640
 # Rock, Paper, Scissors
 
-.macro printing(%str) 	# Macro for printing a given String argument
-	li $v0, 4	# Load syscall for print_string
-	la $a0, %str	# load the address of the given string
-	syscall		# Print String
-.end_macro
-
-.macro readChar
-	li $v0, 12	# Load syscall for read_char
-	syscall		# Read the user inputted char
-.end_macro
-
-.macro readInt(%reg)
-	li $v0, 5	# Load syscall for read_int
-	syscall		# Read the integer
-	move %reg, $v0	# Store the input in %reg
-.end_macro
-
-# Macro to store an inputted string in a buffer argument
-.macro readName(%buffer, %size)
-	li $v0, 8        # Syscall code for reading a string
-	la $a0, %buffer  # Load address of buffer to $a0
-	li $a1, %size    # Load size of buffer to $a1
-	syscall          # Perform the syscall
-	
-	# Remove the newline character
-        la $t5, %buffer			# Load address of the string
-find_newline:
-        lb $t6, 0($t5)			# Load a byte from the string
-        beqz $t6, end_remove		# If null terminator, end loop
-        li $t7, 0x0A			# ASCII code for newline
-        beq $t6, $t7, replace_null	# If newline, replace with null
-        addi $t5, $t5, 1			# Move to the next character
-        j find_newline			# Repeat loop
-
-replace_null:
-        sb $zero, 0($t5)                    # Replace newline with null terminator
-end_remove:
-.end_macro
-
-.macro printInt(%reg)
-	li $v0, 1	# Load Syscall for print_int
-	move $a0, %reg	# Move the result into %reg for printing
-	syscall		# Print the result
-.end_macro
-
-# Macro to print strings without havcing to declare them in data first
-.macro printString(%str)
-	li $v0, 4
-	.data
-	userString: .asciiz %str
-	.text
-	la $a0, userString
-	syscall
-.end_macro
-
-# Print String from a buffer space, mostly used for name
-.macro printName(%buff)
-	li $v0, 4
-	la $a0, %buff
-	syscall
-.end_macro
-
-# Print String from a register that has a string already loaded into it
-.macro printTown(%reg)
-	li $v0, 4
-	move $a0, %reg
-	syscall
-.end_macro
-
-# Spacer for cleanliness
-.macro spacer(%num)
-	li $v0, 4
-	li $s7, 0
-loop:
-	beq $s7, %num, leave
-	add $s7, $s7, 1
-	la $a0, newLine
-	syscall
-	j loop
-leave:
-.end_macro
+.include "RPSprint.asm"
+.include "RPSread.asm"
 
 # Random Integer Generator
 .macro randomInt(%r)
@@ -94,23 +15,23 @@ leave:
     	move %r, $a0		# Store random int into $t0
 .end_macro
 
-.macro oppLoader(%name, %w1, %w2, %w3)
+.macro oppLoader(%name, %w1, %w2)
 	la $s1, %name		# Load their name
 	# Load their attack weights
 	li $s2, %w1
 	li $s3, %w2
-	li $s4, %w3
 .end_macro
 
 # Macro to find what the opponent chose
-.macro BattleSim(%w1, %w2, %w3)
+.macro BattleSim(%w1, %w2)
 
 	# %w1 -> Weight of Rock (e.g., 90)
 	# %w2 -> Weight of Paper (e.g., 5)
-	# %w3 -> Weight of Scissors (e.g., 5)
+	# wieght of scissors is whatever is left
 	
 	# Generate a random number between 0 and 100
 	randomInt($t0)         # Generate random number in $t0 (0-100)
+	printInt($t0)
 	# Check if the random number falls into the Rock range
 	bge $t0, %w1, paper_or_scissors
 	# If $t0 is less than w1, Rock is selected
@@ -119,8 +40,8 @@ leave:
 
 paper_or_scissors:
 	# Check if the random number falls into the Paper range (w1 + w2)
-	add %w2, %w1, %w2
-	bge $t0, %w2, scissors_selected
+	add $t8, %w1, %w2
+	bge $t0, $t8, scissors_selected
 	# If $t0 is less than w1 + w2, Paper is selected
 	li $t2, 1              # Set $t1 to represent Paper
 	j end_battle
@@ -133,28 +54,6 @@ end_battle:
 	# $t1 now contains the selected option
 	# 0 -> Rock, 1 -> Paper, 2 -> Scissors
 	# You can proceed with the next steps in your battle simulation
-.end_macro
-
-# Macro to print out 'rock, 'paper', or 'scissors' for either the user or opponent
-.macro choicePrinter(%reg)
-	beq %reg, 0, print_rock
-	beq %reg, 1, print_paper
-	beq %reg, 2, print_scissors
-	j end_print_choice
-	
-print_rock:
-	printing(rock)
-	j end_print_choice   # Jump to end after printing Rock
-
-print_paper:
-	printing(paper)
-	j end_print_choice   # Jump to end after printing Paper
-
-print_scissors:
-	printing(scissors)
-	j end_print_choice   # Jump to end after printing Scissors
-	
-end_print_choice:
 .end_macro
 
 .macro dialogue
@@ -244,7 +143,7 @@ Story:
 	spacer(5)
 
 	printString("Professor Rand: Hello ")
-	printName(name)
+	printing(name)
 	printString(", and welcome to the world run by the simple game of Rock, Paper, Scissors!\n		One last thing, what town do you represent?\n\n		1) Rockville\n		2) New Paper City\n		3) Scissor Suburbs\nEnter the corresponding number to choose: ")
 town:
 	readInt($t0)
@@ -288,16 +187,16 @@ Opponent_Selector:
 	bge $t0, 0, Randy
 	
 Dwayne:
-	oppLoader(opp1, 90, 5, 5)
+	oppLoader(opp1, 90, 5)
 	j Selected
 Bill:
-	oppLoader(opp2, 30, 60, 10)
+	oppLoader(opp2, 30, 60)
 	j Selected
 Edward:
-	oppLoader(opp3, 10, 20, 70)
+	oppLoader(opp3, 10, 20)
 	j Selected
 Randy:
-	oppLoader(opp4, 33, 33, 34)
+	oppLoader(opp4, 33, 33)
 	j Selected
 Selected:
 	printString("Your Opponent is: ")
@@ -305,7 +204,7 @@ Selected:
 	dialogue			# Have some dialogue the opponent says before your battle
 	
 Fight:
-	li $t6, 35000 	# Initialsie delay counter
+	li $t6, 1000000 	# Initialsie delay counter
 	# Prompt the user for input
 	printString("\n------------ROUND ")
 	printInt($s5)
@@ -343,19 +242,18 @@ scissors_choice:
 	li $t1, 2		# Set $t1 to 2 for Scissors
 	j result
 result:
-	randomInt($t0)
-	BattleSim($s2, $s3, $s4)
+	BattleSim($s2, $s3)
 	printString("\nYou chose: ")
 	choicePrinter($t1)
-	bge $s5, 6, res		# Delay wil lbe 0 at this point
-	mul $t7, $s5, 5000	# Reduce delay by how many rounds have passed
+	bge $s5, 20, res		# Delay will be 0 at this point
+	mul $t7, $s5, 50000	# Reduce delay by how many rounds have passed
 	sub $t6, $t6, $t7
 	delay($t6)
 res:
 	printTown($s1)
 	printString( " threw out: ")
 	choicePrinter($t2)
-	li $t5, 30000			# Load the delay counter
+	li $t5, 1000000			# Load the delay counter
 delay_loop:
 	subi $t5, $t5, 1			# Decrement the delay counter
 	bnez $t5, delay_loop		# Busy-wait until $t5 reaches 0
@@ -423,5 +321,3 @@ choices:
 Done:	# Exit Code
 	li $v0, 10
 	syscall
-
-    	
