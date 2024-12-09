@@ -1,7 +1,7 @@
 # Elijah Rosal, Caleb Szeto, Ryan Hansen, Eric Chen, Cameron Bolanos
 # 12-6-2024
 # CS 2640
-# Rock, Paper, Scissors
+# Final Project: Rock, Paper, Scissors: The Text-Based Adventure Demo
 
 # All macros related to printing
 .macro printing(%str) 	# Macro for printing a given String argument
@@ -223,8 +223,8 @@ delay_loop_scissors:
 .end_macro
 
 .data
-welcome_msg: .asciiz "Welcome to Rock, Paper, Scissors: The Text Based Adventure Demo\n		-Press any key to start-\n"
-name_prompt: .asciiz "Professor Rand: Hello young fellow! I'm Professor Rand, \n		and I'll be guiding you in your intial decisions for your journey.\n		Before we get started, what is your name?\nEnter your name: "
+welcome_msg: .asciiz "Welcome to Rock, Paper, Scissors: The Text-Based Adventure Demo\n		-Press any key to start-\n"
+name_prompt: .asciiz "Professor Rand: Hello young fellow! I'm Professor Rand, \n		and I'll be guiding you in your initial decisions for your journey.\n		Before we get started, what is your name?\nEnter your name: "
 newLine: .asciiz "\n"
 name: .space 20
 rock_t: .asciiz "Rockville"
@@ -241,6 +241,12 @@ dot_str: .asciiz ".\n"
 opp_flags: .word 0, 0, 0, 0 	# Flags for tracking if this opponent has been beaten before
 .text
 
+###################################################
+#
+#	MAIN CODE STARTS HERE
+#
+###################################################
+
 main:
 	li $s0, 0		# Intialise highest win streak record
 	printing(welcome_msg)
@@ -252,10 +258,11 @@ game_select:
 	beq $t0, 1, Story
 	beq $t0, 2, Endless
 	# If invalid input, loop again
-	printString("Invalid choice\n")
+	printString("Invalid choice, Try again.\n")
 	j game_select
 Story:
 	li $t9, 0	# Flag to Indicate what gamemode we are in
+	spacer(5)
 	printing(name_prompt)
 	readName(name, 20)
 	spacer(5)
@@ -293,14 +300,14 @@ reset_loop:
 	subi $t1, $t1, 1		# Decrement the counter
 	bnez $t1, reset_loop	# Repeat until all flags are reset
 	spacer(5)
-	printString("Professor Rand: Oh so you're representing ")
+	printString("Professor Rand: Oh, so you're representing ")
 	printTown($t3)
 	printString(" eh, well then I'll be rooting for you\n		as you compete in our local tournament!\n		-Press any key to continue-\n")
 	readChar
 	spacer(5)
-	printString("Announcer: Welcome to the local tournament of Rock, Paper, Scissors held in lovely ")
+	printString("Announcer: Welcome to the local tournament of Rock, Paper, Scissors, held in lovely ")
 	printTown($t3)
-	printString(".\n           The turnout is pretty good considering the mere population of 20. Of course there are some outsiders here,\n           helping contribute to our prize pool.\n		-Press any key to continue-\n")
+	printString(".\n           The turnout is pretty good considering the mere population of 20. Of course there are some outsiders here,\n           helping contribute to our prize pool.\n           Well let the luckiest pesron win!\n		-Press any key to continue-\n")
 	readChar
 	j next_opponent	
 	
@@ -328,6 +335,7 @@ Round_print:
 	# If we have defeated all 4 opponents, end the tournament
 	bge $t8, 4, tournament_won
 	la $s4, opp_flags		# Reset $s4 to point to the start of opp_flags
+	spacer(3)
 	round_printer($t8)
 Opponent_Selector:
 	
