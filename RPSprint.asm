@@ -67,3 +67,23 @@ loop:
 	j loop
 leave:
 .end_macro
+
+.macro round_printer(%def)
+	beqz %def, Round_16
+	beq %def, 1, Quarter
+	beq %def, 2, Semi
+	beq %def, 3, Finals
+Round_16:
+	printString("\n------------ ROUND OF 16 ------------\n")
+	j end
+Quarter:
+	printString("\n------------ QUARTER FINALS ------------\n")
+	j end
+Semi:
+	printString("\n------------ SEMI-FINALS ------------\n")
+	j end
+Finals:
+	printString("\n------------ FINALS ------------\n")
+	j end
+end:
+.end_macro
