@@ -31,7 +31,6 @@
 	
 	# Generate a random number between 0 and 100
 	randomInt($t0)         # Generate random number in $t0 (0-100)
-	printInt($t0)
 	# Check if the random number falls into the Rock range
 	bge $t0, %w1, paper_or_scissors
 	# If $t0 is less than w1, Rock is selected
@@ -122,6 +121,7 @@ rock: .asciiz "Rock\n"
 paper: .asciiz "Paper\n"
 scissors: .asciiz "Scissors\n"
 dot_str: .asciiz ".\n"
+opp_flags: .word 0, 0, 0, 0 	# Flags for tracking if this opponent has been beaten before
 .text
 
 main:
@@ -138,6 +138,7 @@ game_select:
 	printString("Invalid choice\n")
 	j game_select
 Story:
+	li $t9, 0	# Flag to Indicate what gamemode we are in
 	printing(name_prompt)
 	readName(name, 20)
 	spacer(5)
@@ -163,6 +164,17 @@ Scissor_Suburbs:
 	la $t3, scissors_t
 	j Tournament
 Tournament:
+	li $s6, 0		# Intialise win counter
+	la $s4, opp_flags	# Load the base address of opp_flags into $s4
+	li $t0, 0		# Initialize the reset value
+
+	# Reset all flags to 0
+	li $t1, 4		# Number of flags to reset
+reset_loop:
+	sw $t0, 0($s4)		# Store 0 in the current flag
+	addi $s4, $s4, 4		# Move to the next flag
+	subi $t1, $t1, 1		# Decrement the counter
+	bnez $t1, reset_loop	# Repeat until all flags are reset
 	spacer(5)
 	printString("Professor Rand: Oh so you're representing ")
 	printTown($t3)
@@ -173,29 +185,78 @@ Tournament:
 	printTown($t3)
 	printString(".\n           The turnout is pretty good considering the mere population of 20. Of course there are some outsiders here,\n           helping contribute to our prize pool.\n		-Press any key to continue-\n")
 	readChar
-	j Done	
+	j next_opponent	
+	
 Endless:
-	li $s5, 1 	# Intialise round counter
-	li $s6, 0	# Intialise win streak
+	la $s4, opp_flags	# load address of opponent flags
+	li $t9, 1		# Flag to Indicate what gamemode we are in
+	li $s6, 0		# Intialise win streak
+	j Opponent_Selector
+	
+next_opponent:
+	# Check if all opponents have been defeated (all flags are 1)
+	li $t4, 0	# Intialise loop counter
+	li $t8, 0	# Defeated count
+	
+check_defeated:
+	beq $t4, 4, Round_print		# exit loop after 
+	lw $t2, 0($s4)			# Load first opponent flag
+    	bne $t2, 1, inc_def		# Skip increment defeated count if flag is not equal to 1
+    	addi $t8, $t8, 1			# Increment defeated count
+	inc_def:	
+    	addi $s4, $s4, 4			# Move to next opponent flag
+    	addi $t4, $t4, 1			# Increment loop counter
+    	j check_defeated
+Round_print:
+	# If we have defeated all 4 opponents, end the tournament
+	bge $t8, 4, tournament_won
+	la $s4, opp_flags		# Reset $s4 to point to the start of opp_flags
+	round_printer($t8)
 Opponent_Selector:
-	spacer(3)
+	
+	li $t5, 1	# Intialise opponent marker
 	li $s5, 1 	# Intialise round counter
 	randomInt($t0)
+	printInt($t0)
 	bgt $t0, 75, Dwayne
 	bgt $t0, 50, Bill
 	bgt $t0, 25, Edward
 	bge $t0, 0, Randy
 	
 Dwayne:
+	# Only relevent during story mode
+	beq $t9, 1, ds			# Branch past opponent skipper if not in story mode
+	lw $t4, 0($s4)			# Check if Dwayne is defeated
+	bnez $t4, Opponent_Selector	# Skip if so
+ds:
+	sw $t5, 0($s4)
 	oppLoader(opp1, 90, 5)
 	j Selected
 Bill:
+	# Only relevent during story mode
+	beq $t9, 1, bs			# Branch past opponent skipper if not in story mode
+	lw $t4, 4($s4)			# Check if Dwayne is defeated
+	bnez $t4, Opponent_Selector	# Skip if so
+bs:
+	sw $t5, 4($s4)
 	oppLoader(opp2, 30, 60)
 	j Selected
 Edward:
+	# Only relevent during story mode
+	beq $t9, 1, es			# Branch past opponent skipper if not in story mode
+	lw $t4, 8($s4)			# Check if Dwayne is defeated
+	bnez $t4, Opponent_Selector	# Skip if so
+es:
+	sw $t5, 8($s4)
 	oppLoader(opp3, 10, 20)
 	j Selected
 Randy:
+	# Only relevent during story mode
+	beq $t9, 1, rs			# Branch past opponent skipper if not in story mode
+	lw $t4, 12($s4)			# Check if Dwayne is defeated
+	bnez $t4, Opponent_Selector	# Skip if so
+rs:
+	sw $t5, 12($s4)
 	oppLoader(opp4, 33, 33)
 	j Selected
 Selected:
@@ -204,7 +265,7 @@ Selected:
 	dialogue			# Have some dialogue the opponent says before your battle
 	
 Fight:
-	li $t6, 1000000 	# Initialsie delay counter
+	li $t6, 1000000		# Initialsie delay counter
 	# Prompt the user for input
 	printString("\n------------ROUND ")
 	printInt($s5)
@@ -257,7 +318,7 @@ res:
 delay_loop:
 	subi $t5, $t5, 1			# Decrement the delay counter
 	bnez $t5, delay_loop		# Busy-wait until $t5 reaches 0
-
+	
 	# Branches based on what the user chose to find out who won
 	beq $t1, $t2, draw
 	beq $t1, 0, rock_check		
@@ -287,6 +348,7 @@ saveHigh:
 	move $s0, $s6
 		
 Try_again:
+	beq $t9, 0, story_again
 	printString("		YOU LOSE!!!!!\n	You ended with a win streak of ")
 	printInt($s6)
 	printString(".\n		Your highest win streak is ")
@@ -294,18 +356,26 @@ Try_again:
 	printString("\n	1) Try Again?\n	2) Quit\n")
 	
 getInt:
-	li $t4, 2		# Set Flag
 	readInt($t0)
 	beq $t0, 1, Endless
 	beq $t0, 2, Done
 	# If invalid input, loop again
 	printString("Invalid choice. Try again.\n")
 	j getInt
-	
+story_again:
+	printString("		YOU LOSE!!!!!\n	1) Try Again?\n	2) Quit\n")
+	readInt($t0)
+	beq $t0, 1, Tournament
+	beq $t0, 2, Done
+	# If invalid input, loop again
+	printString("Invalid choice. Try again.\n")
+	j getInt
 win:
+	la $s4, opp_flags		# Reset $s4 to point to the start of opp_flags
 	addi $s6, $s6, 1
 	printString("			YOU WON on Round ")
 	printInt($s5)
+	beq $t9, 0, next_opponent
 	printString("\n		You currently have a win streak of ")
 	printInt($s6)
 	printString("\n			Would You like to Continue?\n	1) Yes\n	2) No\n")
@@ -317,7 +387,22 @@ choices:
 	# If invalid input, loop again
 	printString("Invalid choice. Try again.\n")
 	j choices
-
+tournament_won:
+	printString("\nAnnouncer: CONGRATULATIONS	 ")
+	printing(name)
+	printString("!!!!!!\n           You have won the local tournament of ")
+	printTown($t3)
+	printString(".\n           Which has won you the prize pool of $100 and a\n           ticket to enter the national circuit!\n		-Press any key to continue-\n")
+	readChar
+	spacer(4)
+	printString("\nThis concludes our demo for Rock, Paper, Scissors: The Text Based Adventure.\nThank you for playing the beta of the storymode.\nWe still have endless mode if you want to try for high win streak?\n	1) Yes\n	2) No\n")
+replay:
+	readInt($t0)
+	beq $t0, 1, Endless
+	beq $t0, 2, Done
+	# If invalid input, loop again
+	printString("Invalid choice. Try again.\n")
+	j replay
 Done:	# Exit Code
 	li $v0, 10
 	syscall
