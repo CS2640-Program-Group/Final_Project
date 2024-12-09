@@ -217,7 +217,6 @@ Opponent_Selector:
 	li $t5, 1	# Intialise opponent marker
 	li $s5, 1 	# Intialise round counter
 	randomInt($t0)
-	printInt($t0)
 	bgt $t0, 75, Dwayne
 	bgt $t0, 50, Bill
 	bgt $t0, 25, Edward
