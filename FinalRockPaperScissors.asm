@@ -151,7 +151,7 @@ end_remove:
 	# Check if the random number falls into the Rock range
 	bge $t0, %w1, paper_or_scissors
 	# If $t0 is less than w1, Rock is selected
-	li $t2, 0              # Set $t1 to represent Rock
+	li $t2, 0              # Set $t2 to represent Rock
 	j end_battle
 
 paper_or_scissors:
@@ -159,12 +159,12 @@ paper_or_scissors:
 	add $t8, %w1, %w2
 	bge $t0, $t8, scissors_selected
 	# If $t0 is less than w1 + w2, Paper is selected
-	li $t2, 1              # Set $t1 to represent Paper
+	li $t2, 1              # Set $t2 to represent Paper
 	j end_battle
 
 scissors_selected:
 	# If it's greater than or equal to w1 + w2, Scissors is selected
-	li $t2, 2              # Set $t1 to represent Scissors
+	li $t2, 2              # Set $t2 to represent Scissors
 
 end_battle:
 	# $t2 now contains the selected option
