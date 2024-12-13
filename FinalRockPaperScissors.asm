@@ -169,7 +169,6 @@ scissors_selected:
 end_battle:
 	# $t2 now contains the selected option
 	# 0 -> Rock, 1 -> Paper, 2 -> Scissors
-	# You can proceed with the next steps in your battle simulation
 .end_macro
 
 .macro dialogue
