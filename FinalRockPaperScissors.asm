@@ -167,7 +167,7 @@ scissors_selected:
 	li $t2, 2              # Set $t1 to represent Scissors
 
 end_battle:
-	# $t1 now contains the selected option
+	# $t2 now contains the selected option
 	# 0 -> Rock, 1 -> Paper, 2 -> Scissors
 	# You can proceed with the next steps in your battle simulation
 .end_macro
